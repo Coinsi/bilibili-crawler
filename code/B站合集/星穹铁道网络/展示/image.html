@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Network Graph</title>
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style type="text/css">
+    #mynetwork {
+      width: 100%;
+      height: 800px;
+      border: 1px solid lightgray;
+    }
+  </style>
+</head>
+<body>
+
+<div id="mynetwork"></div>
+
+<script type="text/javascript">
+  async function fetchData(url) {
+    const response = await fetch(url);
+    return response.json();
+  }
+
+  function checkImage(url, callback) {
+    const img = new Image();
+    img.onload = () => callback(url);
+    img.onerror = () => callback(null);
+    img.src = url;
+  }
+
+  async function drawNetwork() {
+    const nodes = await fetchData('nodes.json');
+    const edges = await fetchData('edges.json');
+
+    const container = document.getElementById('mynetwork');
+    const data = {
+      nodes: new vis.DataSet(nodes),
+      edges: new vis.DataSet(edges)
+    };
+
+    const promises = nodes.map(node => {
+      const localUrl = `avatars/${node.id}.avif`;
+      return new Promise(resolve => {
+        checkImage(localUrl, (validUrl) => {
+          if (validUrl) {
+            node.image = validUrl;
+          }
+          resolve(node);
+        });
+      });
+    });
+
+    const resolvedNodes = await Promise.all(promises);
+
+    const options = {
+      nodes: {
+        shape: 'circularImage',
+        size: 30,
+        font: {
+          size: 14,
+          color: '#343434',
+          face: 'Arial'
+        },
+        borderWidth: 2,
+        color: {
+          border: '#2B7CE9',
+          background: '#D2E5FF'
+        },
+        scaling: {
+          label: true,
+          min: 30,
+          max: 50
+        }
+      },
+      edges: {
+        width: 2,
+        color: {
+          color: '#848484',
+          highlight: '#2B7CE9',
+          hover: '#2B7CE9'
+        },
+        smooth: {
+          type: 'continuous'
+        }
+      },
+      layout: {
+        improvedLayout: true
+      },
+      physics: {
+        enabled: true,
+        barnesHut: {
+          gravitationalConstant: -8000,
+          springLength: 200,
+          springConstant: 0.04
+        },
+        stabilization: {
+          enabled: true,
+          iterations: 500,
+          updateInterval: 25
+        }
+      },
+      interaction: {
+        hover: true,
+        tooltipDelay: 200,
+        hideEdgesOnDrag: true,
+        hideEdgesOnZoom: true,
+        navigationButtons: true,
+        keyboard: true
+      }
+    };
+
+    const network = new vis.Network(container, {
+      nodes: new vis.DataSet(resolvedNodes),
+      edges: data.edges
+    }, options);
+
+    // 添加悬浮事件放大节点
+    network.on("hoverNode", function (params) {
+      network.body.nodes[params.node].setOptions({ size: 50 });
+    });
+    network.on("blurNode", function (params) {
+      network.body.nodes[params.node].setOptions({ size: 30 });
+    });
+
+    // 添加点击事件跳转页面
+    network.on("click", function (params) {
+      if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        const nodeData = data.nodes.get(nodeId);
+        if (nodeData.titleLink) {
+          window.open(nodeData.titleLink, '_blank');
+        }
+      }
+    });
+  }
+
+  drawNetwork();
+</script>
+
+</body>
+</html>

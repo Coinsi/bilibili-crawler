@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Network Graph</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        #mynetwork {
+            width: 800px;
+            height: 600px;
+            border: 1px solid lightgray;
+        }
+    </style>
+</head>
+<body>
+    <div id="mynetwork"></div>
+    <script>
+        // DOM 元素
+        var container = document.getElementById('mynetwork');
+
+        // 初始化节点和边
+        var nodes = new vis.DataSet([
+            {id: '1', label: '潜艇伟伟迷\n“但愿日子清净 抬头都是温柔”', shape: 'circularImage', image: 'https://i1.hdslb.com/bfs/face/dc909f4df60307db7029829323abaad3edc07a90.jpg@96w_96h_1c_1s_!web-avatar-space-list.avif'},
+            {id: '2', label: '-灵动---\n这个人没有填简介啊~~~', shape: 'circularImage', image: 'https://i0.hdslb.com/bfs/face/member/noface.jpg@96w_96h_1c_1s_!web-avatar-space-list.avif'},
+            {id: '3', label: '潜艇伟伟迷\n牛逼', shape: 'circularImage', image: 'https://i2.hdslb.com/bfs/face/f6b6d5148d0fb7227150bc28c0ed433dad4edc73.jpg@96w_96h_1c_1s_!web-avatar-space-list.avif'},
+        ]);
+
+        var edges = new vis.DataSet([
+            {from: 1, to: 2},
+            {from: 1, to: 3}
+        ]);
+
+        // 提供数据
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        // 网络图选项
+        var options = {
+            nodes: {
+                borderWidth: 2,
+                size: 30,
+                color: {
+                    border: '#406897',
+                    background: '#6AAFFF'
+                },
+                font: {
+                    color: '#eeeeee'
+                }
+            },
+            edges: {
+                color: 'lightgray'
+            }
+        };
+
+        // 初始化网络图
+        var network = new vis.Network(container, data, options);
+    </script>
+</body>
+</html>

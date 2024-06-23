@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset="UTF-8">
+  <title>网络图</title>
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style type="text/css">
+    #mynetwork {
+      width: 70%;
+      height: 800px;
+      float: left;
+      border: 1px solid lightgray;
+    }
+    #network-info {
+      width: 28%;
+      height: 800px;
+      float: right;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+      overflow-y: scroll;
+    }
+  </style>
+</head>
+<body>
+
+<div id="mynetwork"></div>
+<div id="network-info"></div>
+
+<script type="text/javascript">
+  async function fetchData(url) {
+    const response = await fetch(url);
+    return response.json();
+  }
+
+  function displayNetworkInfo(info) {
+    const infoDiv = document.getElementById('network-info');
+    infoDiv.innerHTML = `
+      <h3>网络信息</h3>
+      <p><strong>平均度数:</strong> ${info.averageDegree.toFixed(2)}</p>
+      <p><strong>网络密度:</strong> ${info.density.toFixed(4)}</p>
+      <p><strong>网络直径:</strong> ${info.diameter}</p>
+      <p><strong>平均聚类系数:</strong> ${info.averageClusteringCoefficient.toFixed(4)}</p>
+      <h4>度数分布:</h4>
+      <p>${info.degreeDistribution.join(', ')}</p>
+    `;
+  }
+
+  function calculateNetworkInfo(nodes, edges) {
+    const degreeMap = new Map();
+    edges.forEach(edge => {
+      degreeMap.set(edge.from, (degreeMap.get(edge.from) || 0) + 1);
+      degreeMap.set(edge.to, (degreeMap.get(edge.to) || 0) + 1);
+    });
+
+    const degrees = Array.from(degreeMap.values());
+    const averageDegree = degrees.reduce((a, b) => a + b, 0) / degrees.length;
+    const density = 2 * edges.length / (nodes.length * (nodes.length - 1));
+    const diameter = Math.max(...degrees);
+    const averageClusteringCoefficient = (degrees.reduce((a, b) => a + b, 0) / degrees.length) / (nodes.length - 1);
+
+    return {
+      averageDegree,
+      density,
+      diameter,
+      averageClusteringCoefficient,
+      degreeDistribution: degrees
+    };
+  }
+
+  async function drawNetwork() {
+    const nodes = await fetchData('nodes.json');
+    const edges = await fetchData('edges.json');
+
+    const networkInfo = calculateNetworkInfo(nodes, edges);
+    displayNetworkInfo(networkInfo);
+
+    const container = document.getElementById('mynetwork');
+    const data = {
+      nodes: new vis.DataSet(nodes),
+      edges: new vis.DataSet(edges)
+    };
+
+    const options = {
+      nodes: {
+        shape: 'dot',
+        size: 16,
+        font: {
+          size: 14,
+          color: '#343434'
+        },
+        borderWidth: 2,
+        color: {
+          border: '#2B7CE9',
+          background: '#D2E5FF'
+        }
+      },
+      edges: {
+        width: 2,
+        color: {
+          color: '#848484',
+          highlight: '#2B7CE9',
+          hover: '#2B7CE9'
+        },
+        smooth: {
+          type: 'continuous'
+        }
+      },
+      layout: {
+        improvedLayout: true
+      },
+      physics: {
+        enabled: true,
+        barnesHut: {
+          gravitationalConstant: -8000,
+          springLength: 200,
+          springConstant: 0.04
+        },
+        stabilization: {
+          enabled: true,
+          iterations: 500,
+          updateInterval: 25
+        }
+      },
+      interaction: {
+        hover: true,
+        tooltipDelay: 200,
+        hideEdgesOnDrag: true,
+        hideEdgesOnZoom: true,
+        navigationButtons: true,
+        keyboard: true
+      }
+    };
+
+    const network = new vis.Network(container, data, options);
+
+    // 添加悬浮事件放大节点
+    network.on("hoverNode", function (params) {
+      network.body.nodes[params.node].setOptions({ size: 50 });
+    });
+    network.on("blurNode", function (params) {
+      network.body.nodes[params.node].setOptions({ size: 30 });
+    });
+
+    // 添加点击事件跳转页面
+    network.on("click", function (params) {
+      if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        const nodeData = data.nodes.get(nodeId);
+        if (nodeData.titleLink) {
+          window.open(nodeData.titleLink, '_blank');
+        }
+      }
+    });
+  }
+
+  drawNetwork();
+</script>
+
+</body>
+</html>
